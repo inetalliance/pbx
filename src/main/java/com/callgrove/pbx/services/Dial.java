@@ -1,0 +1,261 @@
+package com.callgrove.pbx.services;
+
+import com.callgrove.elastix.CallRouter;
+import com.callgrove.obj.*;
+import net.inetalliance.funky.functors.P1;
+import net.inetalliance.log.Log;
+import net.inetalliance.potion.Locator;
+import net.inetalliance.web.HttpMethod;
+import net.inetalliance.web.Processor;
+import net.inetalliance.web.errors.InternalServerError;
+import org.asteriskjava.live.*;
+import org.joda.time.DateTime;
+import org.joda.time.Duration;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import static com.callgrove.elastix.CallRouter.resolved;
+import static com.callgrove.pbx.services.Startup.asterisk;
+import static com.callgrove.types.CallDirection.OUTBOUND;
+import static com.callgrove.types.Resolution.ACTIVE;
+import static com.callgrove.types.Resolution.ANSWERED;
+import static com.callgrove.types.Resolution.VOICEMAIL;
+import static com.callgrove.types.SaleSource.PHONE_CALL;
+import static java.lang.String.format;
+import static javax.servlet.http.HttpServletResponse.SC_OK;
+import static net.inetalliance.funky.functors.types.str.StringFun.empty;
+import static net.inetalliance.potion.Locator.create;
+import static net.inetalliance.potion.Locator.update;
+import static org.asteriskjava.live.ChannelState.HUNGUP;
+
+public class Dial extends Processor {
+  private static AtomicInteger id = new AtomicInteger(0);
+
+  private String printAgent(final Agent agent) {
+    return agent == null ? null : agent.getLastNameFirstInitial();
+  }
+  @Override
+  public void $(final HttpMethod method, final HttpServletRequest request, final HttpServletResponse response)
+      throws Throwable {
+    final int id = Dial.id.getAndIncrement();
+    response.sendError(SC_OK);
+    final String agent = request.getParameter("agent");
+    final String effectiveQueue = request.getParameter("effectiveQueue");
+    final String site = request.getParameter("site");
+    final String contact = request.getParameter("contact");
+    final String cidName = request.getParameter("cidName");
+    final String cidNumber = request.getParameter("cidNumber");
+    final String number = request.getParameter("number");
+    final String opportunity = request.getParameter("opportunity");
+    log.info(
+        format("[%d] Dial %s(%s) for %s on %s(%s) cid: %s<%s>", id, number, contact, agent, site, effectiveQueue, cidName,
+            cidNumber));
+    try {
+      final String dial = format("SIP/%s", agent);
+
+         asterisk.originateToExtensionAsync(dial, "from-internal", number, 1, 30000,
+            new CallerId(cidName, cidNumber), null, new OriginateCallback() {
+              @Override
+              public void onDialing(final AsteriskChannel channel) {
+                final Call call = new Call(channel.getId());
+                call.setCreated(new DateTime());
+                call.setCallerId(new com.callgrove.types.CallerId(cidName, cidNumber));
+                call.setAgent(Locator.$(new Agent(agent)));
+                log.debug("[%d] agent (param) -> %s", id, printAgent(call.getAgent()));
+                if (agent == null) {
+                  call.setAgent(Locator.$(new Agent(cidNumber)));
+                  log.debug("[%d] agent (cid) -> %s", id, printAgent(call.getAgent()));
+                }
+                if (call.getAgent() == null) {
+                  call.setAgent(Locator.$1(Agent.Q.withLastName(call.getCallerId().getName().split(",")[0])));
+                  log.debug("[%d] agent (name) -> %s", id, printAgent(call.getAgent()));
+                }
+                if (!empty.$(site)) {
+                  call.setSite(Locator.$(new Site(Integer.valueOf(site))));
+                }
+                if (!empty.$(opportunity)) {
+                  final Opportunity opp = Locator.$(new Opportunity(Integer.valueOf(opportunity)));
+                  call.setOpportunity(opp);
+                  if (opp != null) {
+                    call.setContact(opp.getContact());
+                    call.setSource(opp.getSource());
+                    if (call.getAgent() == null) {
+                      call.setAgent(opp.getAssignedTo());
+                      log.debug("[%d] agent (opp) -> %s", id, printAgent(call.getAgent()));
+                    }
+                  }
+                }
+                call.setSource(PHONE_CALL);
+
+                if (!empty.$(effectiveQueue)) {
+                  call.setQueue(Locator.$(new Queue(effectiveQueue)));
+                }
+
+                call.setResolution(ACTIVE);
+                call.setDirection(OUTBOUND);
+                create("dial", call);
+
+                final CallRouter.Meta meta = new CallRouter.Meta(call);
+                meta.agent = call.getAgent();
+
+                channel.addPropertyChangeListener(new PropertyChangeListener() {
+                  @Override
+                  public void propertyChange(final PropertyChangeEvent evt) {
+                    log.trace("[%s] " + evt.toString(), call.key);
+                    switch (evt.getPropertyName()) {
+                      case "dialedChannel": {
+                        AsteriskChannel dialedChannel = (AsteriskChannel) evt.getNewValue();
+                        final Segment segment = new Segment(call, dialedChannel.getId());
+                        segment.setCreated(new DateTime());
+                        Agent dialedAgent = Locator.$(new Agent(dialedChannel.getCallerId().getNumber()));
+                        segment.setAgent(dialedAgent == null ? Locator.$(new Agent(agent)) : dialedAgent);
+                        log.debug("[%d:%s] agent (segment) -> %s", id, call.key, printAgent(segment.getAgent()));
+                        segment.setCallerId(new com.callgrove.types.CallerId("", number));
+                        create("dial", segment);
+                        update(call, "dial", new P1<Call>() {
+                          @Override
+                          public void $(final Call call) {
+                            final Agent agent = segment.getAgent();
+                            if (agent != null) {
+                              call.setAgent(agent);
+                              log.debug("[%d:%s] agent (dial) -> %s", id, call.key, printAgent(call.getAgent()));
+                            }
+                          }
+                        });
+                        break;
+                      }
+                      case "state": {
+                        final AsteriskChannel source = (AsteriskChannel) evt.getSource();
+                        if (HUNGUP.equals(evt.getNewValue()) && !source.getName().endsWith("<ZOMBIE>")) {
+                          log.debug("[%d:%s] hung up normally", id, call.key);
+                          update(call, "dial", new P1<Call>() {
+                            @Override
+                            public void $(final Call call) {
+                              if (!resolved.contains(call.getResolution())) {
+                                // look and see if we just came from VoiceMail (history-1 = hangup, history-2 = previous app)
+                                final List<ExtensionHistoryEntry> history = source.getExtensionHistory();
+                                if (history.size() > 2 && "macro-vm".equals(
+                                    history.get(history.size() - 2).getExtension().getContext())) {
+                                  call.setResolution(VOICEMAIL);
+                                } else {
+                                  call.setResolution(ANSWERED);
+                                }
+                              }
+                              call.setDuration(new Duration(call.getCreated(), new DateTime()));
+                            }
+                          });
+                        }
+                        break;
+                      }
+                      case "name": {
+                        if (((String) evt.getNewValue()).endsWith("<ZOMBIE>")) {
+                          log.debug("[%d:%s] transfer, original name was: %s", id, call.key, channel.getName());
+                          AsteriskChannel masq = asterisk.getChannelByName(channel.getName());
+                          masq.addPropertyChangeListener(this);
+                          final Segment segment = new Segment(call, masq.getDialedChannel().getId());
+                          segment.setCreated(new DateTime());
+                          segment.setAnswered(new DateTime());
+                          segment.setAgent(Locator.$(new Agent(masq.getDialedChannel().getCallerId().getNumber())));
+                          log.debug("[%d:%s] agent (xfer segment) -> %s", id,call.key, printAgent(call.getAgent()));
+                          segment.setCallerId(new com.callgrove.types.CallerId(meta.agent.getLastNameFirstInitial(), meta.agent.key));
+                          create("dial", segment);
+                          meta.agent = segment.getAgent();
+                          update(call, "dial", new P1<Call>() {
+                            @Override
+                            public void $(final Call call) {
+                              final Agent agent = segment.getAgent();
+                              if (agent != null) {
+                                call.setAgent(agent);
+                                log.debug("[%d:%s] agent (xfer call) -> %s", id, call.key, printAgent(call.getAgent()));
+                              }
+                              call.setResolution(ACTIVE);
+                            }
+                          });
+                        }
+                        break;
+                      }
+                      case "linkedChannel": {
+                        final AsteriskChannel oldValue = (AsteriskChannel) evt.getOldValue();
+                        final AsteriskChannel newValue = (AsteriskChannel) evt.getNewValue();
+                        log.trace("[%d:%s] link: %s -> %s", id, call.key, oldValue == null ? null : oldValue.getId(), newValue == null ? null : newValue.getId());
+                        if (newValue == null) { // unlinking a channel
+                          assert oldValue != null;
+                          final Segment segment = Locator.$(new Segment(call, oldValue.getId()));
+                          if (segment == null) {
+                            log.error("[%d:%s] could not find segment object %s", id, call.key, oldValue.getId());
+                          } else {
+                            update(segment, "dial", new P1<Segment>() {
+                              @Override
+                              public void $(final Segment segment) {
+                                segment.setEnded(new DateTime());
+                              }
+                            });
+                            update(call, "dial", new P1<Call>() {
+                              @Override
+                              public void $(final Call call) {
+                                if (meta.agent != null) {
+                                  call.setAgent(meta.agent);
+                                  log.debug("[%d:%s] agent (link) -> %s", id, call.key, printAgent(call.getAgent()));
+                                }
+                                call.setDuration(new Duration(call.getCreated(), new DateTime()));
+                              }
+                            });
+                          }
+                        } else { // linking to new channel
+                          final Segment segment = Locator.$(new Segment(call, newValue.getId()));
+                          if (segment == null) {
+                            log.error("[%d:%s] could not find segment object %s", id, call.key, newValue.getId());
+                          } else {
+                            update(segment, "dial", new P1<Segment>() {
+                              @Override
+                              public void $(final Segment segment) {
+                                segment.setAnswered(new DateTime());
+                              }
+                            });
+                          }
+                        }
+                      }
+                    }
+                  }
+                });
+
+              }
+
+              @Override
+              public void onSuccess(final AsteriskChannel channel) {
+
+              }
+
+              @Override
+              public void onNoAnswer(final AsteriskChannel channel) {
+                 log.debug("[%d] agent didn't answer", id);
+
+               }
+
+              @Override
+              public void onBusy(final AsteriskChannel channel) {
+                log.debug("[%d] agent's etension was busy", id);
+
+              }
+
+              @Override
+              public void onFailure(final LiveException cause) {
+                log.debug("[%d] originate failed, %s", id, cause.getMessage());
+              }
+            });
+
+    }
+      catch (Exception e) {
+      throw new InternalServerError(e);
+    }
+
+  }
+
+  private static transient final Log log = Log.getInstance(Dial.class);
+
+}

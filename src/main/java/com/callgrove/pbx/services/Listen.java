@@ -44,7 +44,7 @@ public class Listen extends Processor
 			return;
 		}
 		log.info("%s to %s (%s) channel: %s", action, agent, manager, key);
-		final String dial = AsteriskFun.F.dialString.$(asterisk, manager);
+		final String dial = AsteriskFun.getDialString(manager);
 		final Call call = Locator.$(new Call(key));
 		log.info("call: %s", call);
 		try

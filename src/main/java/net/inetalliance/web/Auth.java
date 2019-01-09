@@ -1,6 +1,5 @@
 package net.inetalliance.web;
 
-import net.inetalliance.funky.functors.types.str.StringFun;
 import net.inetalliance.log.Log;
 import net.inetalliance.types.json.JsonMap;
 import net.inetalliance.types.json.Pretty;
@@ -20,7 +19,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static javax.servlet.http.HttpServletResponse.*;
+import static javax.servlet.http.HttpServletResponse.SC_FORBIDDEN;
+import static net.inetalliance.funky.StringFun.isNotEmpty;
 
 public class Auth extends Processor
 {
@@ -57,7 +57,7 @@ public class Auth extends Processor
 				{
 					log.debug("logging in session %s by password", session.getId());
 					request.getSession().setAttribute("authorized", authorizer.bind(ticket));
-					if (!StringFun.empty.$(request.getParameter("rememberme")))
+					if (isNotEmpty(request.getParameter("rememberme")))
 					{
 						final Cookie cookie = new Cookie("authToken", token);
 						cookie.setMaxAge((int) TimeUnit.DAYS.toSeconds(30));

@@ -1,11 +1,12 @@
 package net.inetalliance.web.errors;
 
-import net.inetalliance.funky.functors.types.str.StringFun;
 import net.inetalliance.web.HttpMethod;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+
+import static net.inetalliance.funky.StringFun.isEmpty;
 
 public abstract class HttpError extends Error
 {
@@ -35,9 +36,9 @@ public abstract class HttpError extends Error
 			throws IOException
 	{
 		final String message = getMessage();
-		if (StringFun.empty.$(message))
+		if (isEmpty(message)) {
 			resp.sendError(getCode());
-		else
+		} else
 			resp.sendError(getCode(), message);
 	}
 }

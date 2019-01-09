@@ -3,6 +3,7 @@ package com.callgrove.pbx.services;
 import com.callgrove.app.pbx.SipMonitor;
 import com.callgrove.elastix.CallRouter;
 import com.callgrove.jobs.CFSync;
+import com.callgrove.util.AsteriskFun;
 import net.inetalliance.cron.Cron;
 import net.inetalliance.log.Log;
 import org.asteriskjava.live.DefaultAsteriskServer;
@@ -22,22 +23,15 @@ public class Startup extends com.callgrove.web.servlets.services.Startup {
     log.info("pbx startup");
     try {
       asterisk = CallRouter.init(new URI(config.getInitParameter("asterisk")));
-      new Thread() {
-        @Override
-        public void run() {
-          try {
-            CallRouter.exec(asterisk);
-          } catch (final IOException e) {
-            log.error(e);
-          }
+      AsteriskFun.init(asterisk);
+      new Thread(() -> {
+        try {
+          CallRouter.exec(asterisk);
+        } catch (final IOException e) {
+          log.error(e);
         }
-      }.start();
-      new Thread() {
-        @Override
-        public void run() {
-          SipMonitor.exec(asterisk);
-        }
-      }.start();
+      }).start();
+      new Thread(() -> SipMonitor.exec(asterisk)).start();
       Cron.interval(15, TimeUnit.SECONDS, new CFSync(asterisk));
 
     } catch (Exception e) {

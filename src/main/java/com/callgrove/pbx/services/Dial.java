@@ -2,7 +2,6 @@ package com.callgrove.pbx.services;
 
 import com.callgrove.elastix.CallRouter;
 import com.callgrove.obj.*;
-import net.inetalliance.funky.functors.P1;
 import net.inetalliance.log.Log;
 import net.inetalliance.potion.Locator;
 import net.inetalliance.web.HttpMethod;
@@ -22,13 +21,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static com.callgrove.elastix.CallRouter.resolved;
 import static com.callgrove.pbx.services.Startup.asterisk;
 import static com.callgrove.types.CallDirection.OUTBOUND;
-import static com.callgrove.types.Resolution.ACTIVE;
-import static com.callgrove.types.Resolution.ANSWERED;
-import static com.callgrove.types.Resolution.VOICEMAIL;
+import static com.callgrove.types.Resolution.*;
 import static com.callgrove.types.SaleSource.PHONE_CALL;
 import static java.lang.String.format;
 import static javax.servlet.http.HttpServletResponse.SC_OK;
-import static net.inetalliance.funky.functors.types.str.StringFun.empty;
+import static net.inetalliance.funky.StringFun.isNotEmpty;
 import static net.inetalliance.potion.Locator.create;
 import static net.inetalliance.potion.Locator.update;
 import static org.asteriskjava.live.ChannelState.HUNGUP;
@@ -72,13 +69,13 @@ public class Dial extends Processor {
                   log.debug("[%d] agent (cid) -> %s", id, printAgent(call.getAgent()));
                 }
                 if (call.getAgent() == null) {
-                  call.setAgent(Locator.$1(Agent.Q.withLastName(call.getCallerId().getName().split(",")[0])));
+                  call.setAgent(Locator.$1(Agent.withLastName(call.getCallerId().getName().split(",")[0])));
                   log.debug("[%d] agent (name) -> %s", id, printAgent(call.getAgent()));
                 }
-                if (!empty.$(site)) {
+                if (isNotEmpty(site)) {
                   call.setSite(Locator.$(new Site(Integer.valueOf(site))));
                 }
-                if (!empty.$(opportunity)) {
+                if (isNotEmpty(opportunity)) {
                   final Opportunity opp = Locator.$(new Opportunity(Integer.valueOf(opportunity)));
                   call.setOpportunity(opp);
                   if (opp != null) {
@@ -92,7 +89,7 @@ public class Dial extends Processor {
                 }
                 call.setSource(PHONE_CALL);
 
-                if (!empty.$(effectiveQueue)) {
+                if (isNotEmpty(effectiveQueue)) {
                   call.setQueue(Locator.$(new Queue(effectiveQueue)));
                 }
 
@@ -117,14 +114,11 @@ public class Dial extends Processor {
                         log.debug("[%d:%s] agent (segment) -> %s", id, call.key, printAgent(segment.getAgent()));
                         segment.setCallerId(new com.callgrove.types.CallerId("", number));
                         create("dial", segment);
-                        update(call, "dial", new P1<Call>() {
-                          @Override
-                          public void $(final Call call) {
-                            final Agent agent = segment.getAgent();
-                            if (agent != null) {
-                              call.setAgent(agent);
-                              log.debug("[%d:%s] agent (dial) -> %s", id, call.key, printAgent(call.getAgent()));
-                            }
+                        update(call, "dial", copy -> {
+                          final Agent agent1 = segment.getAgent();
+                          if (agent1 != null) {
+                            copy.setAgent(agent1);
+                            log.debug("[%d:%s] agent (dial) -> %s", id, copy.key, printAgent(copy.getAgent()));
                           }
                         });
                         break;
@@ -133,21 +127,18 @@ public class Dial extends Processor {
                         final AsteriskChannel source = (AsteriskChannel) evt.getSource();
                         if (HUNGUP.equals(evt.getNewValue()) && !source.getName().endsWith("<ZOMBIE>")) {
                           log.debug("[%d:%s] hung up normally", id, call.key);
-                          update(call, "dial", new P1<Call>() {
-                            @Override
-                            public void $(final Call call) {
-                              if (!resolved.contains(call.getResolution())) {
-                                // look and see if we just came from VoiceMail (history-1 = hangup, history-2 = previous app)
-                                final List<ExtensionHistoryEntry> history = source.getExtensionHistory();
-                                if (history.size() > 2 && "macro-vm".equals(
-                                    history.get(history.size() - 2).getExtension().getContext())) {
-                                  call.setResolution(VOICEMAIL);
-                                } else {
-                                  call.setResolution(ANSWERED);
-                                }
+                          update(call, "dial", copy -> {
+                            if (!resolved.contains(copy.getResolution())) {
+                              // look and see if we just came from VoiceMail (history-1 = hangup, history-2 = previous app)
+                              final List<ExtensionHistoryEntry> history = source.getExtensionHistory();
+                              if (history.size() > 2 && "macro-vm".equals(
+                                  history.get(history.size() - 2).getExtension().getContext())) {
+                                copy.setResolution(VOICEMAIL);
+                              } else {
+                                copy.setResolution(ANSWERED);
                               }
-                              call.setDuration(new Duration(call.getCreated(), new DateTime()));
                             }
+                            copy.setDuration(new Duration(copy.getCreated(), new DateTime()));
                           });
                         }
                         break;
@@ -165,16 +156,13 @@ public class Dial extends Processor {
                           segment.setCallerId(new com.callgrove.types.CallerId(meta.agent.getLastNameFirstInitial(), meta.agent.key));
                           create("dial", segment);
                           meta.agent = segment.getAgent();
-                          update(call, "dial", new P1<Call>() {
-                            @Override
-                            public void $(final Call call) {
-                              final Agent agent = segment.getAgent();
-                              if (agent != null) {
-                                call.setAgent(agent);
-                                log.debug("[%d:%s] agent (xfer call) -> %s", id, call.key, printAgent(call.getAgent()));
-                              }
-                              call.setResolution(ACTIVE);
+                          update(call, "dial", copy -> {
+                            final Agent agent12 = segment.getAgent();
+                            if (agent12 != null) {
+                              copy.setAgent(agent12);
+                              log.debug("[%d:%s] agent (xfer call) -> %s", id, copy.key, printAgent(copy.getAgent()));
                             }
+                            copy.setResolution(ACTIVE);
                           });
                         }
                         break;
@@ -189,21 +177,15 @@ public class Dial extends Processor {
                           if (segment == null) {
                             log.error("[%d:%s] could not find segment object %s", id, call.key, oldValue.getId());
                           } else {
-                            update(segment, "dial", new P1<Segment>() {
-                              @Override
-                              public void $(final Segment segment) {
-                                segment.setEnded(new DateTime());
-                              }
+                            update(segment, "dial", copy -> {
+                              copy.setEnded(new DateTime());
                             });
-                            update(call, "dial", new P1<Call>() {
-                              @Override
-                              public void $(final Call call) {
-                                if (meta.agent != null) {
-                                  call.setAgent(meta.agent);
-                                  log.debug("[%d:%s] agent (link) -> %s", id, call.key, printAgent(call.getAgent()));
-                                }
-                                call.setDuration(new Duration(call.getCreated(), new DateTime()));
+                            update(call, "dial", copy -> {
+                              if (meta.agent != null) {
+                                copy.setAgent(meta.agent);
+                                log.debug("[%d:%s] agent (link) -> %s", id, copy.key, printAgent(copy.getAgent()));
                               }
+                              copy.setDuration(new Duration(copy.getCreated(), new DateTime()));
                             });
                           }
                         } else { // linking to new channel
@@ -211,11 +193,8 @@ public class Dial extends Processor {
                           if (segment == null) {
                             log.error("[%d:%s] could not find segment object %s", id, call.key, newValue.getId());
                           } else {
-                            update(segment, "dial", new P1<Segment>() {
-                              @Override
-                              public void $(final Segment segment) {
-                                segment.setAnswered(new DateTime());
-                              }
+                            update(segment, "dial", copy -> {
+                              copy.setAnswered(new DateTime());
                             });
                           }
                         }

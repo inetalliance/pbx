@@ -71,7 +71,7 @@ public abstract class Processor extends HttpServlet {
 
 	protected static Integer getParam(final HttpServletRequest request, final String name, final Integer defaultValue) {
 		final String s = request.getParameter(name);
-		return isEmpty(s) ? defaultValue : new Integer(s);
+		return isEmpty(s) ? defaultValue : Integer.valueOf(s);
 	}
 
 	protected static boolean getParam(final HttpServletRequest request, final String name, final boolean defaultValue) {
@@ -81,7 +81,7 @@ public abstract class Processor extends HttpServlet {
 
 	protected static Long getParam(final HttpServletRequest request, final String name, final Long defaultValue) {
 		final String s = request.getParameter(name);
-		return isEmpty(s) ? defaultValue : new Long(s);
+		return isEmpty(s) ? defaultValue : Long.valueOf(s);
 	}
 
 	protected static <T> List<T> getParamValues(final HttpServletRequest request, final Class<T> type,

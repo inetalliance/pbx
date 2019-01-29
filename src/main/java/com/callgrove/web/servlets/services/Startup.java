@@ -8,7 +8,6 @@ import net.inetalliance.log.Log;
 import net.inetalliance.potion.Locator;
 import net.inetalliance.potion.MessageServer;
 import net.inetalliance.sql.Db;
-import net.inetalliance.types.util.LocalizedMessages;
 import net.inetalliance.util.security.auth.impl.AuthorizedUser;
 import net.inetalliance.util.security.auth.impl.SimpleAuthorizer;
 import net.inetalliance.web.Auth;
@@ -52,8 +51,6 @@ public class Startup extends Processor
 			System.exit(1);
 		}
 		log.info("loading localized messages");
-		LocalizedMessages.add(Locale.US, Startup.class.getResource("/commonMessages.xml"));
-		LocalizedMessages.add(Locale.US, Startup.class.getResource("/callgroveMessages.xml"));
 		log.info("registering business objects");
 		try
 		{

@@ -13,26 +13,23 @@ import org.asteriskjava.live.AsteriskChannel;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import static com.callgrove.pbx.services.Listen.Action.LISTEN;
-import static com.callgrove.pbx.services.Startup.asterisk;
-import static javax.servlet.http.HttpServletResponse.SC_OK;
+import static com.callgrove.pbx.services.Listen.Action.*;
+import static com.callgrove.pbx.services.Startup.*;
+import static javax.servlet.http.HttpServletResponse.*;
 
-public class Listen extends Processor
-{
+public class Listen
+	extends Processor {
 
-	public enum Action
-	{
+	public enum Action {
 		LISTEN, WHISPER
 	}
 
-	public Listen()
-	{
+	public Listen() {
 	}
 
 	@Override
 	public void $(final HttpMethod method, final HttpServletRequest request, final HttpServletResponse response)
-			throws Throwable
-	{
+		throws Throwable {
 
 		response.sendError(SC_OK);
 		final Action action = getParam(request, Action.class, "action");
@@ -40,22 +37,19 @@ public class Listen extends Processor
 		final String manager = request.getParameter("manager");
 		final JsonMap json = Hud.currentStatus.getMap(agent);
 		final String key = json.get("callId");
-		if(key == null) {
+		if (key == null) {
 			return;
 		}
 		log.info("%s to %s (%s) channel: %s", action, agent, manager, key);
 		final String dial = AsteriskFun.getDialString(manager);
 		final Call call = Locator.$(new Call(key));
 		log.info("call: %s", call);
-		try
-		{
+		try {
 			final AsteriskChannel channel = asterisk.getChannelById(call.key);
 			final String channelName = channel.getLinkedChannel().getName();
 			final String options = action == LISTEN ? channel.getName() : String.format("%s|w", channelName);
 			asterisk.originateToApplication(dial, "ChanSpy", options, 15000);
-		}
-		catch (Exception e)
-		{
+		} catch (Exception e) {
 			log.error(e);
 		}
 

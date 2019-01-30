@@ -9,32 +9,28 @@ import org.asteriskjava.live.AsteriskChannel;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import static javax.servlet.http.HttpServletResponse.SC_OK;
+import static javax.servlet.http.HttpServletResponse.*;
 
-public class Transfer extends Processor
-{
+public class Transfer
+	extends Processor {
 
+	@Override
+	public void $(final HttpMethod method, final HttpServletRequest request,
+		final HttpServletResponse response) throws Throwable {
+		response.sendError(SC_OK);
+		final String agent = request.getParameter("agent");
+		final String call = request.getParameter("call");
+		log.info("Transfer %s->%s", call, agent);
 
-  @Override
-  public void $(final HttpMethod method, final HttpServletRequest request, final HttpServletResponse response) throws Throwable
-  {
-    response.sendError(SC_OK);
-    final String agent = request.getParameter("agent");
-    final String call = request.getParameter("call");
-    log.info("Transfer %s->%s", call, agent);
+		try {
+			final AsteriskChannel channel = Startup.asterisk.getChannelById(call);
+			channel.redirect("from-internal", agent, 1);
 
+		} catch (Exception e) {
+			throw new InternalServerError(e);
+		}
+	}
 
-    try
-    {
-      final AsteriskChannel channel = Startup.asterisk.getChannelById(call);
-      channel.getLinkedChannel().redirect("default", agent, 1);
-
-    }
-    catch (Exception e)
-    {
-      throw new InternalServerError(e);
-    }
-  }
-  private static transient final Log log = Log.getInstance(Transfer.class);
+	private static transient final Log log = Log.getInstance(Transfer.class);
 
 }

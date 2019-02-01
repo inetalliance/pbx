@@ -32,7 +32,7 @@ public class Listen
 		throws Throwable {
 
 		response.sendError(SC_OK);
-		final Action action = getParam(request, Action.class, "action");
+		final Action action = getParam(request, "action", Action.class);
 		final String agent = request.getParameter("agent");
 		final String manager = request.getParameter("manager");
 		final JsonMap json = Hud.currentStatus.getMap(agent);

@@ -1,7 +1,5 @@
 package net.inetalliance.web;
 
-import net.inetalliance.log.Log;
-import net.inetalliance.potion.cache.RedisJsonCache;
 import net.inetalliance.types.json.Json;
 import net.inetalliance.types.json.JsonMap;
 import net.inetalliance.util.security.auth.Authorized;
@@ -34,40 +32,15 @@ public abstract class LongTask
 		});
 	}
 
-	protected RedisJsonCache getCache() {
-		return null;
-	}
-
-	protected void cache(final RedisJsonCache cache, final String key, final JsonMap response) {
-
-	}
-
-	protected String getCacheKey(final HttpServletRequest request, final Authorized authorized) {
-		return null;
-	}
-
 	@Override
 	protected Json $(final HttpMethod method, final HttpServletRequest request,
-	                 final HttpServletResponse response, final Authorized authorized) {
+		final HttpServletResponse response, final Authorized authorized) {
 
-		final RedisJsonCache cache = getCache();
-		final String cacheKey;
-		if (cache != null) {
-			cacheKey = getCacheKey(request, authorized);
-			log.debug("cache key: %s", cacheKey);
-			final Json cached = cache.getMap(cacheKey);
-			if (cached != null) {
-				return cached;
-			}
-		} else {
-			cacheKey = null;
-		}
-
-		final Integer id = getParam(request, Integer.class, "id");
+		final Integer id = getParam(request, "id", s -> s.map(Integer::valueOf).orElse(null));
 		if (id == null) {
 			final Task task = newTask(request, authorized, nextId++);
 			tasks.put(task.id, task);
-			executor.submit((Runnable) task);
+			executor.submit(task);
 			return task.toJson();
 		} else {
 			final Task task = tasks.get(id);
@@ -77,9 +50,6 @@ public abstract class LongTask
 				if (task.t != null) {
 					throw new InternalServerError(task.t);
 				} else if (task.response != null) {
-					if (cache != null) {
-						cache(cache, cacheKey, task.response);
-					}
 					return task.response;
 				} else {
 					return task.toJson();
@@ -88,15 +58,16 @@ public abstract class LongTask
 		}
 	}
 
-	protected abstract Task newTask(final HttpServletRequest request, final Authorized authorized, final int id);
+	abstract Task newTask(final HttpServletRequest request, final Authorized authorized, final int id);
 
 	protected abstract static class Task
-		implements Supplier<JsonMap>, Runnable {
+		implements Supplier<JsonMap>,
+		           Runnable {
 		private final int id;
 		private final int maxValue;
-		public String label;
-		public int value;
-		protected Throwable t;
+		String label;
+		int value;
+		Throwable t;
 		protected JsonMap response;
 		private final transient JsonMap json;
 
@@ -106,7 +77,7 @@ public abstract class LongTask
 			json = new JsonMap();
 		}
 
-		public Json toJson() {
+		Json toJson() {
 			json.put("id", id);
 			json.put("running", true);
 			json.put("maxValue", maxValue);
@@ -125,5 +96,4 @@ public abstract class LongTask
 		}
 	}
 
-	private static transient final Log log = Log.getInstance(LongTask.class);
 }

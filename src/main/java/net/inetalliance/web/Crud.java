@@ -24,13 +24,13 @@ import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import static net.inetalliance.funky.ClassFun.convert;
-import static net.inetalliance.funky.StringFun.isEmpty;
-import static net.inetalliance.potion.Locator.$$;
-import static net.inetalliance.potion.Locator.$A;
-import static net.inetalliance.types.util.LocalizedMessages.$M;
+import static net.inetalliance.funky.ClassFun.*;
+import static net.inetalliance.funky.StringFun.*;
+import static net.inetalliance.potion.Locator.*;
+import static net.inetalliance.types.util.LocalizedMessages.*;
 
-public class Crud<O> extends JsonProcessor {
+public class Crud<O>
+	extends JsonProcessor {
 	public static final String queryParameter = "query";
 	public static final String queryLimitParameter = "limit";
 	public static final String pageStartParameter = "start";
@@ -42,10 +42,11 @@ public class Crud<O> extends JsonProcessor {
 	protected static Predicate<? super Property> getPropertyFilter(final HttpServletRequest request) {
 		final String[] strings = request.getParameterValues("property");
 		final List<String> properties = strings == null ? null : Arrays.asList(strings);
-		if (properties == null || properties.isEmpty())
+		if (properties == null || properties.isEmpty()) {
 			return p -> true;
-		else
+		} else {
 			return p -> properties.contains(p.getName());
+		}
 	}
 
 	protected Json respond(final HttpServletRequest request, final Info<O> info, final Collection<O> o) {
@@ -53,10 +54,11 @@ public class Crud<O> extends JsonProcessor {
 	}
 
 	protected Json respond(final HttpServletRequest request, final Info<O> info, final O o) {
-		if (o == null)
+		if (o == null) {
 			return toJson(false, $M(request.getLocale(), "notFound"), null, null);
-		else
+		} else {
 			return toJson(true, null, 1, JsonList.singleton(toJson(request, info, o)));
+		}
 	}
 
 	@SuppressWarnings({"unchecked"})
@@ -84,10 +86,12 @@ public class Crud<O> extends JsonProcessor {
 		return json;
 	}
 
-	public static <T> Json toJson(final HttpServletRequest request, final Info<T> info, final Collection<T> objects) {
+	public static <T> Json toJson(final HttpServletRequest request, final Info<T> info,
+		final Collection<T> objects) {
 		final JsonList list = new JsonList(objects.size());
-		for (final T t : objects)
+		for (final T t : objects) {
 			list.add(toJson(request, info, t));
+		}
 		return toJson(list);
 	}
 
@@ -116,18 +120,21 @@ public class Crud<O> extends JsonProcessor {
 	public static Json toJson(final boolean success, final String message, final Integer total, final Json data) {
 		final JsonMap json = new JsonMap();
 		json.put("success", success);
-		if (message != null)
+		if (message != null) {
 			json.put("message", message);
-		if (total != null)
+		}
+		if (total != null) {
 			json.put("total", total);
-		if (data != null)
+		}
+		if (data != null) {
 			json.put("data", data);
+		}
 		return json;
 	}
 
 	@Override
 	public Json $(final HttpMethod method, final HttpServletRequest request, final HttpServletResponse response,
-	              final Authorized authorized)
+		final Authorized authorized)
 		throws Throwable {
 		switch (method) {
 			case POST:
@@ -147,9 +154,9 @@ public class Crud<O> extends JsonProcessor {
 		throws IllegalAccessException, InstantiationException, NoSuchMethodException, InvocationTargetException {
 		final Info<O> info = getInfo(request);
 		final O object = getObject(info, request, data.getInteger("data"));
-		if (object == null)
+		if (object == null) {
 			throw new NotFoundError();
-		else {
+		} else {
 			Locator.delete(authorized.getName(), object);
 			return toJson(true, null, 0, JsonList.empty);
 		}
@@ -165,16 +172,18 @@ public class Crud<O> extends JsonProcessor {
 		final ValidationErrors errors = Locator.update(canonical, authorized.getName(),
 			copy -> {
 				for (final Property<O, ?> property : info.properties) {
-					if (property.containsProperty(values))
+					if (property.containsProperty(values)) {
 						property.setIf(copy, values);
+					}
 				}
 				return Validator.update(request.getLocale(), copy);
 			});
 
-		if (errors.isEmpty())
+		if (errors.isEmpty()) {
 			return respond(request, info, canonical);
-		else
+		} else {
 			return respond(errors);
+		}
 
 	}
 
@@ -182,15 +191,16 @@ public class Crud<O> extends JsonProcessor {
 		throws IllegalAccessException, InstantiationException, NoSuchMethodException, InvocationTargetException {
 		final Info<O> info = getInfo(request);
 		final O object = info.type.getDeclaredConstructor().newInstance();
-		info.properties().filter(p->!p.isGenerated()).forEach(property -> {
+		info.properties().filter(p -> !p.isGenerated()).forEach(property -> {
 			property.setIf(object, data);
 		});
 		final ValidationErrors errors = Validator.create(request.getLocale(), object);
 		if (errors.isEmpty()) {
 			Locator.create(authorized.getName(), object);
 			return respond(request, info, object);
-		} else
+		} else {
 			return respond(errors);
+		}
 	}
 
 	protected Json read(final HttpServletRequest request)
@@ -199,10 +209,11 @@ public class Crud<O> extends JsonProcessor {
 		final String query = request.getParameter(queryParameter);
 		if (isEmpty(query)) {
 			final Object key = getKey(request);
-			if (key != null)
+			if (key != null) {
 				return respond(request, info, getObject(info, request, key));
-			else
+			} else {
 				return respond(request, info, getObjects(info, request));
+			}
 		} else {
 			// autocomplete
 			return respond(request, info, autocomplete(info, request));
@@ -211,9 +222,10 @@ public class Crud<O> extends JsonProcessor {
 
 	protected List<O> autocomplete(final Info<O> info, final HttpServletRequest request) {
 		final String query = request.getParameter(queryParameter);
-		if (query == null)
+		if (query == null) {
 			return Collections.emptyList();
-		final Integer limit = getParam(request, Integer.class, queryLimitParameter);
+		}
+		final Integer limit = getParam(request, queryLimitParameter, s -> s.map(Integer::valueOf).orElse(null));
 		final Autocomplete<O> autocomplete = new Autocomplete<>(info.type, limit, space.split(query));
 		final List<O> results = new ArrayList<>(limit);
 		results.addAll($$(autocomplete));

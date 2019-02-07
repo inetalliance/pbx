@@ -11,6 +11,7 @@ import org.asteriskjava.live.*;
 import org.joda.time.DateTime;
 import org.joda.time.Duration;
 
+import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.beans.PropertyChangeEvent;
@@ -30,6 +31,7 @@ import static net.inetalliance.potion.Locator.create;
 import static net.inetalliance.potion.Locator.update;
 import static org.asteriskjava.live.ChannelState.HUNGUP;
 
+@WebServlet("/dial")
 public class Dial extends Processor {
   private static AtomicInteger id = new AtomicInteger(0);
 

@@ -6,11 +6,13 @@ import net.inetalliance.web.Processor;
 import net.inetalliance.web.errors.InternalServerError;
 import org.asteriskjava.live.AsteriskChannel;
 
+import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import static javax.servlet.http.HttpServletResponse.*;
 
+@WebServlet("/transfer")
 public class Transfer
 	extends Processor {
 

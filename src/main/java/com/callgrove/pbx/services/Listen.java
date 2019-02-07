@@ -10,6 +10,7 @@ import net.inetalliance.web.HttpMethod;
 import net.inetalliance.web.Processor;
 import org.asteriskjava.live.AsteriskChannel;
 
+import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -17,6 +18,7 @@ import static com.callgrove.pbx.services.Listen.Action.*;
 import static com.callgrove.pbx.services.Startup.*;
 import static javax.servlet.http.HttpServletResponse.*;
 
+@WebServlet("/listen")
 public class Listen
 	extends Processor {
 

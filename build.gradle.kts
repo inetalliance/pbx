@@ -11,3 +11,8 @@ dependencies {
     runtime("org.postgresql:postgresql:42.2.5")
 }
 apply(from = "cargo.gradle")
+tasks {
+    register("deploy") {
+        dependsOn("cargoDeployRemote")
+    }
+}

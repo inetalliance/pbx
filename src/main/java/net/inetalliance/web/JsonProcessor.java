@@ -8,12 +8,12 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.PrintWriter;
 
-public abstract class JsonProcessor extends SecureProcessor
-{
+public abstract class JsonProcessor
+		extends SecureProcessor {
 
-	@Override public void $(final HttpMethod method, final HttpServletRequest request, final HttpServletResponse response)
-			throws Throwable
-	{
+	@Override
+	public void $(final HttpMethod method, final HttpServletRequest request, final HttpServletResponse response)
+			throws Throwable {
 		final Authorized authorized = Auth.getAuthorized(request);
 		final Json json = $(method, request, response, authorized);
 		response.setContentType(jsonContentType);
@@ -24,5 +24,6 @@ public abstract class JsonProcessor extends SecureProcessor
 	}
 
 	protected abstract Json $(final HttpMethod method, final HttpServletRequest request,
-	                          final HttpServletResponse response, final Authorized authorized) throws Throwable;
+			final HttpServletResponse response, final Authorized authorized)
+			throws Throwable;
 }

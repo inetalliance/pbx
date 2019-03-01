@@ -1,54 +1,45 @@
 package net.inetalliance.web.errors;
 
-import net.inetalliance.types.json.JsonList;
-import net.inetalliance.types.json.JsonMap;
-import net.inetalliance.types.json.Pretty;
-import net.inetalliance.web.HttpMethod;
-import net.inetalliance.web.SecureProcessor;
+import net.inetalliance.types.json.*;
+import net.inetalliance.web.*;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.util.regex.Pattern;
+import javax.servlet.http.*;
+import java.io.*;
+import java.util.regex.*;
 
 import static javax.servlet.http.HttpServletResponse.*;
 
-public class InternalServerError extends HttpError
-{
+public class InternalServerError
+		extends HttpError {
 	private static final Pattern dot = Pattern.compile("\\.");
 
-	public InternalServerError(final String message, final Throwable cause)
-	{
+	public InternalServerError(final String message, final Throwable cause) {
 		super(message, cause);
 	}
 
-	public InternalServerError(final Throwable cause)
-	{
+	public InternalServerError(final Throwable cause) {
 		super(cause);
 	}
 
-	@Override public int getCode()
-	{
-		return SC_INTERNAL_SERVER_ERROR;
-	}
-
-	@Override public void $(final HttpMethod method, final HttpServletRequest request, final HttpServletResponse response)
-			throws IOException
-	{
+	@Override
+	public void $(final HttpMethod method, final HttpServletRequest request, final HttpServletResponse response)
+			throws IOException {
 		$(response, getCause());
 	}
 
+	@Override
+	public int getCode() {
+		return SC_INTERNAL_SERVER_ERROR;
+	}
+
 	public static void $(final HttpServletResponse response, final Throwable t)
-			throws IOException
-	{
+			throws IOException {
 		final JsonMap json = new JsonMap();
 		json.put("type", t.getClass().getName());
 		json.put("message", t.getMessage());
 		final StackTraceElement[] stack = t.getStackTrace();
 		final JsonList stackJson = new JsonList(stack.length);
-		for (final StackTraceElement frame : stack)
-		{
+		for (final StackTraceElement frame : stack) {
 			final JsonMap frameJson = new JsonMap();
 			frameJson.put("class", frame.getClassName());
 			final String[] split = dot.split(frame.getClassName());

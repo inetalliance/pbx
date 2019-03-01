@@ -1,26 +1,26 @@
 package com.callgrove.pbx.services;
 
-import com.callgrove.app.pbx.SipMonitor;
-import com.callgrove.elastix.CallRouter;
-import com.callgrove.jobs.CFSync;
-import com.callgrove.util.AsteriskFun;
-import net.inetalliance.angular.LocatorStartup;
-import net.inetalliance.cron.Cron;
-import net.inetalliance.log.Log;
-import org.asteriskjava.live.DefaultAsteriskServer;
+import com.callgrove.app.pbx.*;
+import com.callgrove.elastix.*;
+import com.callgrove.jobs.*;
+import com.callgrove.util.*;
+import net.inetalliance.angular.*;
+import net.inetalliance.cron.*;
+import net.inetalliance.log.*;
+import org.asteriskjava.live.*;
 
-import javax.servlet.ServletContext;
-import javax.servlet.ServletContextEvent;
-import javax.servlet.annotation.WebListener;
-import java.io.IOException;
-import java.net.URI;
-import java.util.concurrent.TimeUnit;
+import javax.servlet.*;
+import javax.servlet.annotation.*;
+import java.io.*;
+import java.net.*;
+import java.util.concurrent.*;
 
 import static net.inetalliance.angular.AngularServlet.*;
 
 @WebListener
 public class Startup
-	extends LocatorStartup {
+		extends LocatorStartup {
+	private static final transient Log log = Log.getInstance(Startup.class);
 	static DefaultAsteriskServer asterisk;
 	private Thread router;
 
@@ -62,7 +62,5 @@ public class Startup
 			asterisk.shutdown();
 		}
 	}
-
-	private static final transient Log log = Log.getInstance(Startup.class);
 
 }

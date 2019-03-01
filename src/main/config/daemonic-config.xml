@@ -1,22 +1,22 @@
 <?xml version="1.0" encoding="ISO-8859-1" ?>
 <!DOCTYPE daemonic-config PUBLIC
-		"-//Apache Software Foundation//DTD Struts Configuration 1.1//EN"
-		"http://www.mage.net/dtd/daemonic-config.dtd">
+        "-//Apache Software Foundation//DTD Struts Configuration 1.1//EN"
+        "http://www.mage.net/dtd/daemonic-config.dtd">
 <daemonic-config>
-	<javaArg name="Djava.awt.headless=">true</javaArg>
-	<javaArg name="javaagent:">/ia/bin/lib/p6-transformer.jar</javaArg>
-	<javaArg name="Xms">128m</javaArg>
-	<javaArg name="Xmx">256m</javaArg>
-  <development>
-    <javaArg name="Dweb.host">0.0.0.0</javaArg>
-  </development>
-	<app id="web" jar="lib/start.jar">
-    <javaArg name="Djetty.home=">/ia/jetty</javaArg>
-    <javaArg name="Dweb.home=">/ia/live/cg/pbx</javaArg>
-    <javaArg name="Dweb.port=">8081</javaArg>
-    <production>
-      <javaArg name="Dweb.host=">127.0.0.1</javaArg>
-    </production>
-    <arg>config/jetty.xml</arg>
-	</app>
+    <javaArg name="Djava.awt.headless=">true</javaArg>
+    <javaArg name="javaagent:">/ia/bin/lib/p6-transformer.jar</javaArg>
+    <javaArg name="Xms">128m</javaArg>
+    <javaArg name="Xmx">256m</javaArg>
+    <development>
+        <javaArg name="Dweb.host">0.0.0.0</javaArg>
+    </development>
+    <app id="web" jar="lib/start.jar">
+        <javaArg name="Djetty.home=">/ia/jetty</javaArg>
+        <javaArg name="Dweb.home=">/ia/live/cg/pbx</javaArg>
+        <javaArg name="Dweb.port=">8081</javaArg>
+        <production>
+            <javaArg name="Dweb.host=">127.0.0.1</javaArg>
+        </production>
+        <arg>config/jetty.xml</arg>
+    </app>
 </daemonic-config>

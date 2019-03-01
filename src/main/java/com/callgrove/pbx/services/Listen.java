@@ -1,18 +1,16 @@
 package com.callgrove.pbx.services;
 
-import com.callgrove.jobs.Hud;
-import com.callgrove.obj.Call;
-import com.callgrove.util.AsteriskFun;
-import net.inetalliance.log.Log;
-import net.inetalliance.potion.Locator;
-import net.inetalliance.types.json.JsonMap;
-import net.inetalliance.web.HttpMethod;
-import net.inetalliance.web.Processor;
-import org.asteriskjava.live.AsteriskChannel;
+import com.callgrove.jobs.*;
+import com.callgrove.obj.*;
+import com.callgrove.util.*;
+import net.inetalliance.log.*;
+import net.inetalliance.potion.*;
+import net.inetalliance.types.json.*;
+import net.inetalliance.web.*;
+import org.asteriskjava.live.*;
 
-import javax.servlet.annotation.WebServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import javax.servlet.annotation.*;
+import javax.servlet.http.*;
 
 import static com.callgrove.pbx.services.Listen.Action.*;
 import static com.callgrove.pbx.services.Startup.*;
@@ -20,18 +18,16 @@ import static javax.servlet.http.HttpServletResponse.*;
 
 @WebServlet("/listen")
 public class Listen
-	extends Processor {
+		extends Processor {
 
-	public enum Action {
-		LISTEN, WHISPER
-	}
+	private static final transient Log log = Log.getInstance(Listen.class);
 
 	public Listen() {
 	}
 
 	@Override
 	public void $(final HttpMethod method, final HttpServletRequest request, final HttpServletResponse response)
-		throws Throwable {
+			throws Throwable {
 
 		response.sendError(SC_OK);
 		final Action action = getParam(request, "action", Action.class);
@@ -57,6 +53,9 @@ public class Listen
 
 	}
 
-	private static final transient Log log = Log.getInstance(Listen.class);
+	public enum Action {
+		LISTEN,
+		WHISPER
+	}
 
 }

@@ -1,24 +1,24 @@
 package com.callgrove.pbx.services;
 
-import net.inetalliance.log.Log;
-import net.inetalliance.web.HttpMethod;
-import net.inetalliance.web.Processor;
-import net.inetalliance.web.errors.InternalServerError;
-import org.asteriskjava.live.AsteriskChannel;
+import net.inetalliance.log.*;
+import net.inetalliance.web.*;
+import net.inetalliance.web.errors.*;
+import org.asteriskjava.live.*;
 
-import javax.servlet.annotation.WebServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import javax.servlet.annotation.*;
+import javax.servlet.http.*;
 
 import static javax.servlet.http.HttpServletResponse.*;
 
 @WebServlet("/transfer")
 public class Transfer
-	extends Processor {
+		extends Processor {
+
+	private static transient final Log log = Log.getInstance(Transfer.class);
 
 	@Override
-	public void $(final HttpMethod method, final HttpServletRequest request,
-		final HttpServletResponse response) throws Throwable {
+	public void $(final HttpMethod method, final HttpServletRequest request, final HttpServletResponse response)
+			throws Throwable {
 		response.sendError(SC_OK);
 		final String agent = request.getParameter("agent");
 		final String call = request.getParameter("call");
@@ -32,7 +32,5 @@ public class Transfer
 			throw new InternalServerError(e);
 		}
 	}
-
-	private static transient final Log log = Log.getInstance(Transfer.class);
 
 }

@@ -30,7 +30,7 @@ import static net.inetalliance.potion.Locator.*;
 import static net.inetalliance.types.util.LocalizedMessages.*;
 
 public class Crud<O>
-	extends JsonProcessor {
+		extends JsonProcessor {
 	public static final String queryParameter = "query";
 	public static final String queryLimitParameter = "limit";
 	public static final String pageStartParameter = "start";
@@ -86,8 +86,7 @@ public class Crud<O>
 		return json;
 	}
 
-	public static <T> Json toJson(final HttpServletRequest request, final Info<T> info,
-		final Collection<T> objects) {
+	public static <T> Json toJson(final HttpServletRequest request, final Info<T> info, final Collection<T> objects) {
 		final JsonList list = new JsonList(objects.size());
 		for (final T t : objects) {
 			list.add(toJson(request, info, t));
@@ -134,8 +133,8 @@ public class Crud<O>
 
 	@Override
 	public Json $(final HttpMethod method, final HttpServletRequest request, final HttpServletResponse response,
-		final Authorized authorized)
-		throws Throwable {
+			final Authorized authorized)
+			throws Throwable {
 		switch (method) {
 			case POST:
 				return create(request, authorized, JsonMap.parse(request.getInputStream()));
@@ -151,7 +150,7 @@ public class Crud<O>
 	}
 
 	protected Json delete(final HttpServletRequest request, final Authorized authorized, final JsonMap data)
-		throws IllegalAccessException, InstantiationException, NoSuchMethodException, InvocationTargetException {
+			throws IllegalAccessException, InstantiationException, NoSuchMethodException, InvocationTargetException {
 		final Info<O> info = getInfo(request);
 		final O object = getObject(info, request, data.getInteger("data"));
 		if (object == null) {
@@ -163,21 +162,20 @@ public class Crud<O>
 	}
 
 	protected Json update(final HttpServletRequest request, final Authorized authorized, final JsonMap data)
-		throws IllegalAccessException, InstantiationException, NoSuchMethodException, InvocationTargetException {
+			throws IllegalAccessException, InstantiationException, NoSuchMethodException, InvocationTargetException {
 		final Info<O> info = getInfo(data);
 		final JsonMap values = data.getMap("data");
 		final O canonical = getObject(info, request, data);
 		Locator.read(canonical);
 
-		final ValidationErrors errors = Locator.update(canonical, authorized.getName(),
-			copy -> {
-				for (final Property<O, ?> property : info.properties) {
-					if (property.containsProperty(values)) {
-						property.setIf(copy, values);
-					}
+		final ValidationErrors errors = Locator.update(canonical, authorized.getName(), copy -> {
+			for (final Property<O, ?> property : info.properties) {
+				if (property.containsProperty(values)) {
+					property.setIf(copy, values);
 				}
-				return Validator.update(request.getLocale(), copy);
-			});
+			}
+			return Validator.update(request.getLocale(), copy);
+		});
 
 		if (errors.isEmpty()) {
 			return respond(request, info, canonical);
@@ -188,7 +186,7 @@ public class Crud<O>
 	}
 
 	protected Json create(final HttpServletRequest request, final Authorized authorized, final JsonMap data)
-		throws IllegalAccessException, InstantiationException, NoSuchMethodException, InvocationTargetException {
+			throws IllegalAccessException, InstantiationException, NoSuchMethodException, InvocationTargetException {
 		final Info<O> info = getInfo(request);
 		final O object = info.type.getDeclaredConstructor().newInstance();
 		info.properties().filter(p -> !p.isGenerated()).forEach(property -> {
@@ -204,7 +202,7 @@ public class Crud<O>
 	}
 
 	protected Json read(final HttpServletRequest request)
-		throws IllegalAccessException, InstantiationException, NoSuchMethodException, InvocationTargetException {
+			throws IllegalAccessException, InstantiationException, NoSuchMethodException, InvocationTargetException {
 		final Info<O> info = getInfo(request);
 		final String query = request.getParameter(queryParameter);
 		if (isEmpty(query)) {
@@ -239,12 +237,12 @@ public class Crud<O>
 	}
 
 	protected O getObject(final Info<O> info, final HttpServletRequest request, final JsonMap data)
-		throws IllegalAccessException, InstantiationException, NoSuchMethodException, InvocationTargetException {
+			throws IllegalAccessException, InstantiationException, NoSuchMethodException, InvocationTargetException {
 		return getObject(info, request, getKey(data.getMap("data")));
 	}
 
 	protected O getObject(final Info<O> info, final HttpServletRequest request, final Object key)
-		throws InstantiationException, IllegalAccessException, NoSuchMethodException, InvocationTargetException {
+			throws InstantiationException, IllegalAccessException, NoSuchMethodException, InvocationTargetException {
 		final O t = info.type.getDeclaredConstructor().newInstance();
 		set(t, info.keys().findFirst().orElseThrow(), key);
 		return Locator.$(t);

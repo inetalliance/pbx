@@ -15,7 +15,7 @@ import java.util.concurrent.Executors;
 import java.util.function.Supplier;
 
 public abstract class LongTask
-	extends JsonProcessor {
+		extends JsonProcessor {
 	private final ExecutorService executor;
 
 	private final Map<Integer, Task> tasks;
@@ -33,8 +33,8 @@ public abstract class LongTask
 	}
 
 	@Override
-	protected Json $(final HttpMethod method, final HttpServletRequest request,
-		final HttpServletResponse response, final Authorized authorized) {
+	protected Json $(final HttpMethod method, final HttpServletRequest request, final HttpServletResponse response,
+			final Authorized authorized) {
 
 		final Integer id = getParam(request, "id", s -> s.map(Integer::valueOf).orElse(null));
 		if (id == null) {
@@ -61,8 +61,7 @@ public abstract class LongTask
 	abstract Task newTask(final HttpServletRequest request, final Authorized authorized, final int id);
 
 	protected abstract static class Task
-		implements Supplier<JsonMap>,
-		           Runnable {
+			implements Supplier<JsonMap>, Runnable {
 		private final int id;
 		private final int maxValue;
 		String label;

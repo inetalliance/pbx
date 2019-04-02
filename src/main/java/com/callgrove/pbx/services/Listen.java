@@ -48,7 +48,7 @@ public class Listen
       final AsteriskChannel channel = asterisk.getChannelById(call.key);
       final String channelName = channel.getLinkedChannel().getName();
       final String options =
-          action == LISTEN ? channel.getName() : String.format("%s|w", channelName);
+          action == LISTEN ? channel.getName() : String.format("%s,w", channelName);
       asterisk.originateToApplication(dial, "ChanSpy", options, 15000);
     } catch (Exception e) {
       log.error(e);

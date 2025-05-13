@@ -1,12 +1,13 @@
 package net.inetalliance.web.errors;
 
-import static javax.servlet.http.HttpServletResponse.SC_METHOD_NOT_ALLOWED;
+
+import static jakarta.servlet.http.HttpServletResponse.SC_METHOD_NOT_ALLOWED;
 
 public class MethodNotAllowedError
-    extends HttpError {
+        extends HttpError {
 
-  @Override
-  public int getCode() {
-    return SC_METHOD_NOT_ALLOWED;
-  }
+    @Override
+    public int getCode() {
+        return SC_METHOD_NOT_ALLOWED;
+    }
 }

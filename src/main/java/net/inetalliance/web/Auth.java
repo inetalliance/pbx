@@ -1,110 +1,110 @@
 package net.inetalliance.web;
 
-import static javax.servlet.http.HttpServletResponse.SC_FORBIDDEN;
-import static net.inetalliance.funky.StringFun.isNotEmpty;
 
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.util.concurrent.TimeUnit;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import javax.servlet.http.Cookie;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
-import net.inetalliance.log.Log;
+import com.ameriglide.phenix.core.Log;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import lombok.val;
 import net.inetalliance.types.json.JsonMap;
 import net.inetalliance.types.json.Pretty;
 import net.inetalliance.types.www.ContentType;
-import net.inetalliance.util.security.Ticket;
 import net.inetalliance.util.security.auth.Authenticator;
 import net.inetalliance.util.security.auth.Authorized;
 import net.inetalliance.util.security.auth.Authorizer;
 
+import java.io.IOException;
+import java.util.concurrent.TimeUnit;
+import java.util.regex.Pattern;
+
+import static com.ameriglide.phenix.core.Strings.isNotEmpty;
+import static jakarta.servlet.http.HttpServletResponse.SC_FORBIDDEN;
+
 public class Auth
-    extends Processor {
+        extends Processor {
 
-  private static final Pattern logout = Pattern.compile("(.*)/logout");
-  private static transient final Log log = Log.getInstance(Auth.class);
-  public static Authenticator authenticator;
-  public static Authorizer authorizer;
-  public static String asset;
+    private static final Pattern logout = Pattern.compile("(.*)/logout");
+    private static final Log log = new Log();
+    public static Authenticator authenticator;
+    public static Authorizer authorizer;
+    public static String asset;
 
-  public static boolean isAuthenticated(final HttpServletRequest request,
-      final HttpServletResponse response)
-      throws IOException {
-    log.trace("checking if %s is authenticated", request.getSession().getId());
-    final Authorized authorized = getAuthorized(request);
-    if (authorized != null) {
-      log.trace("%s is authenticated", request.getSession().getId());
-      return true;
-    }
-    final Cookie[] cookies = request.getCookies();
-    if (cookies != null) {
-      for (final Cookie cookie : cookies) {
-        if ("authToken".equals(cookie.getName())) {
-          log.trace("%s has an authToken", request.getSession().getId());
-          final Ticket ticket = authenticator.login(cookie.getValue());
-          if (ticket == null || ticket.getToken() == null) {
-            break;
-          } else {
-            log.trace("%s has a valid authToken", request.getSession().getId());
-            request.getSession().setAttribute("authorized", authorizer.bind(ticket));
+    public static boolean isAuthenticated(final HttpServletRequest request,
+                                          final HttpServletResponse response)
+            throws IOException {
+        log.trace("checking if %s is authenticated", request.getSession().getId());
+        val authorized = getAuthorized(request);
+        if (authorized != null) {
+            log.trace("%s is authenticated", request.getSession().getId());
             return true;
-          }
         }
-      }
+        val cookies = request.getCookies();
+        if (cookies != null) {
+            for (val cookie : cookies) {
+                if ("authToken".equals(cookie.getName())) {
+                    log.trace("%s has an authToken", request.getSession().getId());
+                    val ticket = authenticator.login(cookie.getValue());
+                    if (ticket == null || ticket.getToken() == null) {
+                        break;
+                    } else {
+                        log.trace("%s has a valid authToken", request.getSession().getId());
+                        request.getSession().setAttribute("authorized", authorizer.bind(ticket));
+                        return true;
+                    }
+                }
+            }
+        }
+        log.trace("%s is not authenticated", request.getSession().getId());
+        response.sendError(SC_FORBIDDEN);
+        return false;
     }
-    log.trace("%s is not authenticated", request.getSession().getId());
-    response.sendError(SC_FORBIDDEN);
-    return false;
-  }
 
-  public static Authorized getAuthorized(final HttpServletRequest request) {
-    return (Authorized) request.getSession().getAttribute("authorized");
-  }
+    public static Authorized getAuthorized(final HttpServletRequest request) {
+        return (Authorized) request.getSession().getAttribute("authorized");
+    }
 
-  @Override
-  public void $(final HttpMethod method, final HttpServletRequest request,
-      final HttpServletResponse response)
-      throws Throwable {
-    final Matcher matcher = logout.matcher(request.getRequestURI());
-    if (matcher.matches()) {
-      final HttpSession session = request.getSession();
-      log.debug("logging out %s", session.getId());
-      session.removeAttribute("authorized");
-      session.invalidate();
-      final Cookie cookie = new Cookie("authToken", "");
-      cookie.setMaxAge(-1);
-      response.addCookie(cookie);
-      response.sendRedirect(matcher.group(1));
-    } else  // login
-    {
-      final String name = request.getParameter("username");
-      final String password = request.getParameter("password");
-      final HttpSession session = request.getSession();
-      final Ticket ticket = authenticator.login(name, password, session.getId());
-      synchronized (session) {
-        final String token = ticket.getToken();
-        if (token != null) {
-          log.debug("logging in session %s by password", session.getId());
-          request.getSession().setAttribute("authorized", authorizer.bind(ticket));
-          if (isNotEmpty(request.getParameter("rememberme"))) {
-            final Cookie cookie = new Cookie("authToken", token);
-            cookie.setMaxAge((int) TimeUnit.DAYS.toSeconds(30));
+    @Override
+    public void $(final HttpMethod method, final HttpServletRequest request,
+                  final HttpServletResponse response)
+            throws Throwable {
+        val matcher = logout.matcher(request.getRequestURI());
+        if (matcher.matches()) {
+            val session = request.getSession();
+            log.debug("logging out %s", session.getId());
+            session.removeAttribute("authorized");
+            session.invalidate();
+            val cookie = new Cookie("authToken", "");
+            cookie.setMaxAge(-1);
             response.addCookie(cookie);
-          }
-          response.setContentType(ContentType.JAVA_SERIALIZED_OBJECT.toString());
-          final PrintWriter writer = response.getWriter();
-          writer.print(Pretty.$(JsonMap.singletonMap("success", true)));
-          writer.flush();
-        } else {
-          log.debug("password login failed for %s", session.getId());
-          //response.setHeader("WWW-Authenticate", String.format("Basic realm=\"%s\"", asset));
-          response.sendError(SC_FORBIDDEN);
+            response.sendRedirect(matcher.group(1));
+        } else  // login
+        {
+            val name = request.getParameter("username");
+            val password = request.getParameter("password");
+            val session = request.getSession();
+            val ticket = authenticator.login(name, password, session.getId());
+            synchronized (session) {
+                val token = ticket.getToken();
+                if (token != null) {
+                    log.debug("logging in session %s by password", session.getId());
+                    request.getSession().setAttribute("authorized", authorizer.bind(ticket));
+                    //noinspection SpellCheckingInspection
+                    if (isNotEmpty(request.getParameter("rememberme"))) {
+                        val cookie = new Cookie("authToken", token);
+                        cookie.setMaxAge((int) TimeUnit.DAYS.toSeconds(30));
+                        response.addCookie(cookie);
+                    }
+                    response.setContentType(ContentType.JAVA_SERIALIZED_OBJECT.toString());
+                    val writer = response.getWriter();
+                    writer.print(Pretty.$(JsonMap.singletonMap("success", true)));
+                    writer.flush();
+                } else {
+                    log.debug("password login failed for %s", session.getId());
+                    //response.setHeader("WWW-Authenticate", String.format("Basic realm=\"%s\"", asset));
+                    response.sendError(SC_FORBIDDEN);
+                }
+            }
         }
-      }
     }
-  }
 
 }

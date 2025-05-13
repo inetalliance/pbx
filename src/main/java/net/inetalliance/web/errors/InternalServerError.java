@@ -1,17 +1,19 @@
 package net.inetalliance.web.errors;
 
-import static javax.servlet.http.HttpServletResponse.SC_INTERNAL_SERVER_ERROR;
 
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.util.regex.Pattern;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import net.inetalliance.types.json.JsonList;
 import net.inetalliance.types.json.JsonMap;
 import net.inetalliance.types.json.Pretty;
 import net.inetalliance.web.HttpMethod;
 import net.inetalliance.web.SecureProcessor;
+
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.util.regex.Pattern;
+
+import static jakarta.servlet.http.HttpServletResponse.SC_INTERNAL_SERVER_ERROR;
 
 public class InternalServerError
     extends HttpError {

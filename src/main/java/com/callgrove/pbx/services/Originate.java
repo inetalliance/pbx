@@ -1,42 +1,46 @@
 package com.callgrove.pbx.services;
 
-import static javax.servlet.http.HttpServletResponse.SC_OK;
 
+import com.ameriglide.phenix.core.Log;
 import com.callgrove.obj.Agent;
-import java.util.Collections;
-import javax.servlet.annotation.WebServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import net.inetalliance.log.Log;
+import jakarta.servlet.annotation.WebServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import lombok.val;
 import net.inetalliance.potion.Locator;
 import net.inetalliance.web.HttpMethod;
 import net.inetalliance.web.Processor;
 import net.inetalliance.web.errors.InternalServerError;
 
+import java.util.Collections;
+
+import static jakarta.servlet.http.HttpServletResponse.SC_OK;
+
 @WebServlet("/originate")
 public class Originate
-    extends Processor {
+        extends Processor {
 
-  private static transient final Log log = Log.getInstance(Originate.class);
+    private static final Log log = new Log();
 
-  @Override
-  public void $(final HttpMethod method, final HttpServletRequest request,
-      final HttpServletResponse response)
-      throws Throwable {
-    response.sendError(SC_OK);
-    final String from = request.getParameter("from");
-    final String to = request.getParameter("to");
-    log.info("Originate %s->%s", from, to);
+    @Override
+    public void $(final HttpMethod method, final HttpServletRequest request,
+                  final HttpServletResponse response)
+            throws Throwable {
+        response.sendError(SC_OK);
+        val from = request.getParameter("from");
+        val to = request.getParameter("to");
+        log.info("Originate %s->%s", from, to);
 
-    try {
-      Agent agent = Locator.$(new Agent(from));
-      Startup.asterisk
-          .originateToExtensionAsync(from, "from-internal", to, 1, 15000L, agent.getCallerId(),
-              Collections.singletonMap("INTRACOMPANYROUTE", "YES"), null);
+        try {
+            var agent = Locator.$(new Agent(from));
+            //noinspection SpellCheckingInspection
+            Startup.asterisk
+                    .originateToExtensionAsync(from, "from-internal", to, 1, 15000L, agent.getCallerId(),
+                            Collections.singletonMap("INTRACOMPANYROUTE", "YES"), null);
 
-    } catch (Exception e) {
-      throw new InternalServerError(e);
+        } catch (Exception e) {
+            throw new InternalServerError(e);
+        }
     }
-  }
 
 }

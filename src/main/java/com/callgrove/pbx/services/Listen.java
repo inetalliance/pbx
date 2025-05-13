@@ -1,64 +1,63 @@
 package com.callgrove.pbx.services;
 
-import static com.callgrove.pbx.services.Listen.Action.LISTEN;
-import static com.callgrove.pbx.services.Startup.asterisk;
-import static javax.servlet.http.HttpServletResponse.SC_OK;
-
+import com.ameriglide.phenix.core.Log;
 import com.callgrove.jobs.Hud;
 import com.callgrove.obj.Call;
 import com.callgrove.util.AsteriskFun;
-import javax.servlet.annotation.WebServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import net.inetalliance.log.Log;
+import jakarta.servlet.annotation.WebServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import lombok.val;
 import net.inetalliance.potion.Locator;
-import net.inetalliance.types.json.JsonMap;
 import net.inetalliance.web.HttpMethod;
 import net.inetalliance.web.Processor;
-import org.asteriskjava.live.AsteriskChannel;
+
+import static com.callgrove.pbx.services.Listen.Action.LISTEN;
+import static com.callgrove.pbx.services.Startup.asterisk;
+import static jakarta.servlet.http.HttpServletResponse.SC_OK;
 
 @WebServlet("/listen")
 public class Listen
-    extends Processor {
+        extends Processor {
 
-  private static final transient Log log = Log.getInstance(Listen.class);
+    private static final Log log = new Log();
 
-  public Listen() {
-  }
-
-  @Override
-  public void $(final HttpMethod method, final HttpServletRequest request,
-      final HttpServletResponse response)
-      throws Throwable {
-
-    response.sendError(SC_OK);
-    final Action action = getParam(request, "action", Action.class);
-    final String agent = request.getParameter("agent");
-    final String manager = request.getParameter("manager");
-    final JsonMap json = Hud.currentStatus.getMap(agent);
-    final String key = json.get("callId");
-    if (key == null) {
-      return;
-    }
-    log.info("%s to %s (%s) channel: %s", action, agent, manager, key);
-    final String dial = AsteriskFun.getDialString(manager);
-    final Call call = Locator.$(new Call(key));
-    log.info("call: %s", call);
-    try {
-      final AsteriskChannel channel = asterisk.getChannelById(call.key);
-      final String channelName = channel.getLinkedChannel().getName();
-      final String options =
-          action == LISTEN ? channel.getName() : String.format("%s,w", channelName);
-      asterisk.originateToApplication(dial, "ChanSpy", options, 15000);
-    } catch (Exception e) {
-      log.error(e);
+    public Listen() {
     }
 
-  }
+    @Override
+    public void $(final HttpMethod method, final HttpServletRequest request,
+                  final HttpServletResponse response)
+            throws Throwable {
 
-  public enum Action {
-    LISTEN,
-    WHISPER
-  }
+        response.sendError(SC_OK);
+        val action = getParam(request, "action", Action.class);
+        val agent = request.getParameter("agent");
+        val manager = request.getParameter("manager");
+        val json = Hud.currentStatus.getMap(agent);
+        val key = json.get("callId");
+        if (key == null) {
+            return;
+        }
+        log.info("%s to %s (%s) channel: %s", action, agent, manager, key);
+        val dial = AsteriskFun.getDialString(manager);
+        val call = Locator.$(new Call(key));
+        log.info("call: %s", call);
+        try {
+            val channel = asterisk.getChannelById(call.key);
+            val channelName = channel.getLinkedChannel().getName();
+            val options =
+                    action == LISTEN ? channel.getName() : String.format("%s,w", channelName);
+            asterisk.originateToApplication(dial, "ChanSpy", options, 15000);
+        } catch (Exception e) {
+            log.error(e);
+        }
+
+    }
+
+    public enum Action {
+        LISTEN,
+        WHISPER
+    }
 
 }

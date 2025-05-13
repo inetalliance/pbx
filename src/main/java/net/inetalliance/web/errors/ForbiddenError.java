@@ -1,6 +1,7 @@
 package net.inetalliance.web.errors;
 
-import static javax.servlet.http.HttpServletResponse.SC_FORBIDDEN;
+
+import static jakarta.servlet.http.HttpServletResponse.SC_FORBIDDEN;
 
 public class ForbiddenError
     extends HttpError {

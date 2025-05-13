@@ -1,11 +1,12 @@
 description = "CG2 PBX"
 plugins {
     war
+		id("java-library")
 }
 dependencies {
-    api(project(":api:obj"))
+    api(project(":sonar:obj"))
     api(project(":libs:types"))
-    api(project(":api:angular"))
+    api(project(":sonar:angular"))
     api(project(":msg:aj"))
 
     implementation(libs.asterisk)

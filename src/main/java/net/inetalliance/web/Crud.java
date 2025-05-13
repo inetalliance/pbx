@@ -47,7 +47,7 @@ public class Crud<O>
         val strings = request.getParameterValues("property");
         val properties = strings == null ? null : Arrays.asList(strings);
         if (properties == null || properties.isEmpty()) {
-            return _ -> true;
+            return p -> true;
         } else {
             return p -> properties.contains(p.getName());
         }

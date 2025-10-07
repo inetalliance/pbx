@@ -11,7 +11,6 @@ import net.inetalliance.amberjack.messages.Authenticator;
 import net.inetalliance.beejax.messages.BeejaxMessageServer;
 import net.inetalliance.cli.Cli;
 import net.inetalliance.potion.Locator;
-import net.inetalliance.potion.MessageServer;
 import net.inetalliance.sql.Db;
 import net.inetalliance.util.security.auth.impl.AuthorizedUser;
 import net.inetalliance.util.security.auth.impl.SimpleAuthorizer;
@@ -82,8 +81,9 @@ public class Startup
         try {
             val dev = Cli.isDevelopment();
             Auth.authorizer = new SimpleAuthorizer(dev, AuthorizedUser.class);
-            Callgrove.beejax = MessageServer
-                    .$(BeejaxMessageServer.class, getInitParameter(config, "beejaxMessageServer"));
+            val beejaxUrl = getInitParameter(config, "beejaxMessageServer");
+            val apiKey = System.getProperty("msg.apiKey", "");
+            Callgrove.beejax = new net.inetalliance.beejax.messages.BeejaxApiClient(beejaxUrl, apiKey);
             log.info("%s is ready", config.getServletContext().getContextPath());
         } catch (Throwable t) {
             log.error(t);

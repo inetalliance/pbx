@@ -30,7 +30,7 @@ public class Startup
     @Override
     public void contextInitialized(final ServletContextEvent sce) {
         super.contextInitialized(sce);
-        log.info("pbx startup");
+        log.info(() -> "pbx startup");
         try {
             val context = sce.getServletContext();
             val asteriskParam = getContextParameter(context, "asterisk");

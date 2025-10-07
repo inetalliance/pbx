@@ -32,29 +32,29 @@ public class Auth
     public static boolean isAuthenticated(final HttpServletRequest request,
                                           final HttpServletResponse response)
             throws IOException {
-        log.trace("checking if %s is authenticated", request.getSession().getId());
+        log.trace(() -> "checking if %s is authenticated".formatted(request.getSession().getId()));
         val authorized = getAuthorized(request);
         if (authorized != null) {
-            log.trace("%s is authenticated", request.getSession().getId());
+            log.trace(() -> "%s is authenticated".formatted(request.getSession().getId()));
             return true;
         }
         val cookies = request.getCookies();
         if (cookies != null) {
             for (val cookie : cookies) {
                 if ("authToken".equals(cookie.getName())) {
-                    log.trace("%s has an authToken", request.getSession().getId());
+                    log.trace(() -> "%s has an authToken".formatted(request.getSession().getId()));
                     val ticket = authenticator.login(cookie.getValue());
                     if (ticket == null || ticket.getToken() == null) {
                         break;
                     } else {
-                        log.trace("%s has a valid authToken", request.getSession().getId());
+                        log.trace(() -> "%s has a valid authToken".formatted(request.getSession().getId()));
                         request.getSession().setAttribute("authorized", authorizer.bind(ticket));
                         return true;
                     }
                 }
             }
         }
-        log.trace("%s is not authenticated", request.getSession().getId());
+        log.trace(() -> "%s is not authenticated".formatted(request.getSession().getId()));
         response.sendError(SC_FORBIDDEN);
         return false;
     }
@@ -70,7 +70,7 @@ public class Auth
         val matcher = logout.matcher(request.getRequestURI());
         if (matcher.matches()) {
             val session = request.getSession();
-            log.debug("logging out %s", session.getId());
+            log.debug(() -> "logging out %s".formatted(session.getId()));
             session.removeAttribute("authorized");
             session.invalidate();
             val cookie = new Cookie("authToken", "");
@@ -86,7 +86,7 @@ public class Auth
             synchronized (session) {
                 val token = ticket.getToken();
                 if (token != null) {
-                    log.debug("logging in session %s by password", session.getId());
+                    log.debug(() -> "logging in session %s by password".formatted(session.getId()));
                     request.getSession().setAttribute("authorized", authorizer.bind(ticket));
                     //noinspection SpellCheckingInspection
                     if (isNotEmpty(request.getParameter("rememberme"))) {
@@ -99,7 +99,7 @@ public class Auth
                     writer.print(Pretty.$(JsonMap.singletonMap("success", true)));
                     writer.flush();
                 } else {
-                    log.debug("password login failed for %s", session.getId());
+                    log.debug(() -> "password login failed for %s".formatted(session.getId()));
                     //response.setHeader("WWW-Authenticate", String.format("Basic realm=\"%s\"", asset));
                     response.sendError(SC_FORBIDDEN);
                 }

@@ -26,7 +26,7 @@ public class Transfer
         response.sendError(SC_OK);
         val agent = request.getParameter("agent");
         val call = request.getParameter("call");
-        log.info("Transfer %s->%s", call, agent);
+        log.info(() -> "Transfer %s->%s".formatted(call, agent));
 
         try {
             val channel = Startup.asterisk.getChannelById(call);

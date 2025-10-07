@@ -43,31 +43,31 @@ public class Startup
     public void init(final ServletConfig config)
             throws ServletException {
         super.init(config);
-        log.info("Starting up %s", config.getServletContext().getContextPath());
+        log.info(() -> "Starting up %s".formatted(config.getServletContext().getContextPath()));
         val dbParam = getInitParameter(config, "db");
         try {
             Locator.attach(new Db(new URI(dbParam)));
         } catch (URISyntaxException e) {
-            log.error("could not parse db parameter as uri: %s", dbParam, e);
+            log.error(() -> "could not parse db parameter as uri: %s".formatted(dbParam), e);
             throw new ServletException(e);
         } catch (Throwable t) {
-            log.error("could not attach to db", t);
+            log.error(() -> "could not attach to db", t);
             System.exit(1);
         }
-        log.info("loading localized messages");
-        log.info("registering business objects");
+        log.info(() -> "loading localized messages");
+        log.info(() -> "registering business objects");
         try {
             Callgrove.register();
         } catch (Throwable t) {
             log.error(t);
             throw new ServletException(t);
         }
-        log.info("configuring security");
+        log.info(() -> "configuring security");
         Auth.asset = getInitParameter(config, "asset");
         val authParam = getInitParameter(config, "authenticator");
         try {
             if (authParam == null) {
-                log.warn("Proceeding with no authenticator");
+                log.warn(() -> "Proceeding with no authenticator");
             } else {
                 Auth.authenticator = new Authenticator(new URI(authParam), Auth.asset);
             }
@@ -84,7 +84,7 @@ public class Startup
             val beejaxUrl = getInitParameter(config, "beejaxMessageServer");
             val apiKey = System.getProperty("msg.apiKey", "");
             Callgrove.beejax = new net.inetalliance.beejax.messages.BeejaxApiClient(beejaxUrl, apiKey);
-            log.info("%s is ready", config.getServletContext().getContextPath());
+            log.info(() -> "%s is ready".formatted(config.getServletContext().getContextPath()));
         } catch (Throwable t) {
             log.error(t);
             throw new ServletException(t);

@@ -29,7 +29,7 @@ public class Originate
         response.sendError(SC_OK);
         val from = request.getParameter("from");
         val to = request.getParameter("to");
-        log.info("Originate %s->%s", from, to);
+        log.info(() -> "Originate %s->%s".formatted(from, to));
 
         try {
             var agent = Locator.$(new Agent(from));

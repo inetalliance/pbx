@@ -71,15 +71,15 @@ public class Dial
                             call.setCreated(LocalDateTime.now());
                             call.setCallerId(new com.callgrove.types.CallerId(cidName, cidNumber));
                             call.setAgent(Locator.$(new Agent(agent)));
-                            log.debug("[%d] agent (param) -> %s", id, printAgent(call.getAgent()));
+                            log.debug(() -> "[%d] agent (param) -> %s".formatted(id, printAgent(call.getAgent())));
                             if (agent == null) {
                                 call.setAgent(Locator.$(new Agent(cidNumber)));
-                                log.debug("[%d] agent (cid) -> %s", id, printAgent(call.getAgent()));
+                                log.debug(() -> "[%d] agent (cid) -> %s".formatted(id, printAgent(call.getAgent())));
                             }
                             if (call.getAgent() == null) {
                                 call.setAgent(
                                         Locator.$1(Agent.withLastName(call.getCallerId().getName().split(",")[0])));
-                                log.debug("[%d] agent (name) -> %s", id, printAgent(call.getAgent()));
+                                log.debug(() -> "[%d] agent (name) -> %s".formatted(id, printAgent(call.getAgent())));
                             }
                             if (isNotEmpty(site)) {
                                 call.setSite(Locator.$(new Site(Integer.valueOf(site))));
@@ -92,7 +92,7 @@ public class Dial
                                     call.setSource(opp.getSource());
                                     if (call.getAgent() == null) {
                                         call.setAgent(opp.getAssignedTo());
-                                        log.debug("[%d] agent (opp) -> %s", id, printAgent(call.getAgent()));
+                                        log.debug(() -> "[%d] agent (opp) -> %s".formatted(id, printAgent(call.getAgent())));
                                     }
                                 }
                             }
@@ -122,16 +122,16 @@ public class Dial
                                                     .$(new Agent(dialedChannel.getCallerId().getNumber()));
                                             segment.setAgent(
                                                     dialedAgent == null ? Locator.$(new Agent(agent)) : dialedAgent);
-                                            log.debug("[%d:%s] agent (segment) -> %s", id, call.key,
-                                                    printAgent(segment.getAgent()));
+                                            log.debug(() -> "[%d:%s] agent (segment) -> %s".formatted(id, call.key,
+                                                    printAgent(segment.getAgent())));
                                             segment.setCallerId(new com.callgrove.types.CallerId("", number));
                                             create("dial", segment);
                                             update(call, "dial", copy -> {
                                                 val agent1 = segment.getAgent();
                                                 if (agent1 != null) {
                                                     copy.setAgent(agent1);
-                                                    log.debug("[%d:%s] agent (dial) -> %s", id, copy.key,
-                                                            printAgent(copy.getAgent()));
+                                                    log.debug(() -> "[%d:%s] agent (dial) -> %s".formatted(id, copy.key,
+                                                            printAgent(copy.getAgent())));
                                                 }
                                             });
                                             break;
@@ -140,7 +140,7 @@ public class Dial
                                             val source = (AsteriskChannel) evt.getSource();
                                             if (HUNGUP.equals(evt.getNewValue()) && !source.getName()
                                                     .endsWith("<ZOMBIE>")) {
-                                                log.debug("[%d:%s] hung up normally", id, call.key);
+                                                log.debug(() -> "[%d:%s] hung up normally".formatted(id, call.key));
                                                 update(call, "dial", copy -> {
                                                     if (!resolved.contains(copy.getResolution())) {
                                                         // look and see if we just came from VoiceMail
@@ -162,8 +162,8 @@ public class Dial
                                         }
                                         case "name": {
                                             if (((String) evt.getNewValue()).endsWith("<ZOMBIE>")) {
-                                                log.debug("[%d:%s] transfer, original name was: %s", id, call.key,
-                                                        channel.getName());
+                                                log.debug(() -> "[%d:%s] transfer, original name was: %s".formatted(id, call.key,
+                                                        channel.getName()));
                                                 var masq = asterisk.getChannelByName(channel.getName());
                                                 masq.addPropertyChangeListener(this);
                                                 val segment = new Segment(call, masq.getDialedChannel().getId());
@@ -171,8 +171,8 @@ public class Dial
                                                 segment.setAnswered(LocalDateTime.now());
                                                 segment.setAgent(Locator
                                                         .$(new Agent(masq.getDialedChannel().getCallerId().getNumber())));
-                                                log.debug("[%d:%s] agent (xfer segment) -> %s", id, call.key,
-                                                        printAgent(call.getAgent()));
+                                                log.debug(() -> "[%d:%s] agent (xfer segment) -> %s".formatted(id, call.key,
+                                                        printAgent(call.getAgent())));
                                                 segment.setCallerId(
                                                         new com.callgrove.types.CallerId(meta.agent.getLastNameFirstInitial(),
                                                                 meta.agent.key));
@@ -182,8 +182,8 @@ public class Dial
                                                     val agent12 = segment.getAgent();
                                                     if (agent12 != null) {
                                                         copy.setAgent(agent12);
-                                                        log.debug("[%d:%s] agent (xfer call) -> %s", id, copy.key,
-                                                                printAgent(copy.getAgent()));
+                                                        log.debug(() -> "[%d:%s] agent (xfer call) -> %s".formatted(id, copy.key,
+                                                                printAgent(copy.getAgent())));
                                                     }
                                                     copy.setResolution(ACTIVE);
                                                 });
@@ -193,17 +193,17 @@ public class Dial
                                         case "linkedChannel": {
                                             val oldValue = (AsteriskChannel) evt.getOldValue();
                                             val newValue = (AsteriskChannel) evt.getNewValue();
-                                            log.trace("[%d:%s] link: %s -> %s", id, call.key,
+                                            log.trace(() -> "[%d:%s] link: %s -> %s".formatted(id, call.key,
                                                     oldValue == null ? null : oldValue.getId(),
-                                                    newValue == null ? null : newValue.getId());
+                                                    newValue == null ? null : newValue.getId()));
                                             if (newValue == null) { // unlinking a channel
                                                 if (oldValue == null) {
                                                     throw new NullPointerException();
                                                 }
                                                 val segment = Locator.$(new Segment(call, oldValue.getId()));
                                                 if (segment == null) {
-                                                    log.error("[%d:%s] could not find segment object %s", id, call.key,
-                                                            oldValue.getId());
+                                                    log.error(() -> "[%d:%s] could not find segment object %s".formatted(id, call.key,
+                                                            oldValue.getId()));
                                                 } else {
                                                     update(segment, "dial", copy -> {
                                                         copy.setEnded(LocalDateTime.now());
@@ -211,8 +211,8 @@ public class Dial
                                                     update(call, "dial", copy -> {
                                                         if (meta.agent != null) {
                                                             copy.setAgent(meta.agent);
-                                                            log.debug("[%d:%s] agent (link) -> %s", id, copy.key,
-                                                                    printAgent(copy.getAgent()));
+                                                            log.debug(() -> "[%d:%s] agent (link) -> %s".formatted(id, copy.key,
+                                                                    printAgent(copy.getAgent())));
                                                         }
                                                         copy.setDuration(Duration.between(copy.getCreated(), LocalDateTime.now()));
                                                     });
@@ -220,8 +220,8 @@ public class Dial
                                             } else { // linking to the new channel
                                                 val segment = Locator.$(new Segment(call, newValue.getId()));
                                                 if (segment == null) {
-                                                    log.error("[%d:%s] could not find segment object %s", id, call.key,
-                                                            newValue.getId());
+                                                    log.error(() -> "[%d:%s] could not find segment object %s".formatted(id, call.key,
+                                                            newValue.getId()));
                                                 } else {
                                                     update(segment, "dial", copy -> {
                                                         copy.setAnswered(LocalDateTime.now());
@@ -242,19 +242,19 @@ public class Dial
 
                         @Override
                         public void onNoAnswer(final AsteriskChannel channel) {
-                            log.debug("[%d] agent didn't answer", id);
+                            log.debug(() -> "[%d] agent didn't answer".formatted(id));
 
                         }
 
                         @Override
                         public void onBusy(final AsteriskChannel channel) {
-                            log.debug("[%d] agent's extension was busy", id);
+                            log.debug(() -> "[%d] agent's extension was busy".formatted(id));
 
                         }
 
                         @Override
                         public void onFailure(final LiveException cause) {
-                            log.debug("[%d] originate failed, %s", id, cause.getMessage());
+                            log.debug(() -> "[%d] originate failed, %s".formatted(id, cause.getMessage()));
                         }
                     });
 

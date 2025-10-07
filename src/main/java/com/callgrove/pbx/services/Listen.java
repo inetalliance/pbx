@@ -39,10 +39,10 @@ public class Listen
         if (key == null) {
             return;
         }
-        log.info("%s to %s (%s) channel: %s", action, agent, manager, key);
+        log.info(() -> "%s to %s (%s) channel: %s".formatted(action, agent, manager, key));
         val dial = AsteriskFun.getDialString(manager);
         val call = Locator.$(new Call(key));
-        log.info("call: %s", call);
+        log.info(() -> "call: %s".formatted(call));
         try {
             val channel = asterisk.getChannelById(call.key);
             val channelName = channel.getLinkedChannel().getName();
